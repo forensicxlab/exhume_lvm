@@ -1,19 +1,19 @@
 use clap::{Arg, ArgAction, Command};
 use clap_num::maybe_hex;
-use prettytable::{cell, row, Table};
+use prettytable::{Cell, Row, Table};
 use std::process;
 
 // Import our modules/crates.
 use exhume_body::Body;
-use exhume_extfs::extfs::ExtFS;
+//use exhume_extfs::extfs::ExtFS;
 use exhume_lvm::Lvm2;
 
 fn main() {
     // Set up Clap command-line argument parsing.
     let matches = Command::new("exhume_lvm")
         .version("1.0")
-        .author("Your Name")
-        .about("Exhumes and displays LVM and ExtFS partition information")
+        .author("ForensicXlab")
+        .about("Exhumes and displays LVM information")
         .arg(
             Arg::new("body")
                 .short('b')
@@ -83,7 +83,7 @@ fn main() {
     println!("Attempting to open ExtFS on logical volume '{}'", lv.name());
 
     // Open the logical volume (this returns an object implementing Read+Seek).
-    let mut lv_reader = lvm.open_lv(lv, &mut body);
+    //let mut lv_reader = lvm.open_lv(lv, &mut body);
 
     // Attempt to create an extfs object from the logical volume.
     // (Pass 0 as offset because the reader is already positioned at the start of the LV.)
@@ -97,56 +97,66 @@ fn main() {
     // println!("ExtFS partition detected successfully.");
 }
 
-/// Display LVM partition details using prettytable.
+/// Display all LVM partition details in one big table.
 fn print_lvm_info(lvm: &Lvm2) {
-    // --- Physical Volume ---
-    let mut pv_table = Table::new();
-    pv_table.add_row(row!["Physical Volume", "PV ID"]);
-    pv_table.add_row(row![lvm.pv_name(), lvm.pv_id()]);
-    println!("Physical Volume:");
-    pv_table.printstd();
+    let mut table = Table::new();
 
-    // --- Volume Group ---
-    let mut vg_table = Table::new();
-    vg_table.add_row(row!["Volume Group", "VG ID", "Extent Size (bytes)"]);
-    vg_table.add_row(row![lvm.vg_name(), lvm.vg_id(), lvm.extent_size()]);
-    println!("\nVolume Group:");
-    vg_table.printstd();
+    // Header row.
+    table.add_row(Row::new(vec![
+        Cell::new("Physical Volume"),
+        Cell::new("Volume Group"),
+        Cell::new("Logical Volume"),
+        Cell::new("Segment"),
+    ]));
 
-    // --- Logical Volumes ---
-    println!("\nLogical Volumes:");
+    // Compose common info for the Physical Volume and Volume Group.
+    let pv_info = format!("Name: {}\nID: {}", lvm.pv_name(), lvm.pv_id());
+    let vg_info = format!(
+        "Name: {}\nID: {}\nExtent Size: {}",
+        lvm.vg_name(),
+        lvm.vg_id(),
+        lvm.extent_size()
+    );
+
+    // Iterate over each logical volume.
     for lv in lvm.lvs() {
-        let mut lv_table = Table::new();
-        lv_table.add_row(row!["LV Name", "LV ID", "Size (extents)"]);
-        lv_table.add_row(row![lv.name(), lv.id(), lv.size_in_extents()]);
-        lv_table.printstd();
-
-        // --- LV Segments ---
-        println!("Segments for LV '{}':", lv.name());
-        let mut seg_table = Table::new();
-        seg_table.add_row(row![
-            "Segment Key",
-            "Start Extent",
-            "Extent Count",
-            "Type",
-            "Stripe Count",
-            "Stripe Size"
-        ]);
-        for (key, seg) in &lv.raw_metadata().segments.0 {
-            seg_table.add_row(row![
-                key,
-                seg.start_extent,
-                seg.extent_count,
-                seg.r#type,
-                seg.stripe_count
-                    .map(|v| v.to_string())
-                    .unwrap_or_else(|| "-".to_owned()),
-                seg.stripe_size
-                    .map(|v| v.to_string())
-                    .unwrap_or_else(|| "-".to_owned())
-            ]);
+        let lv_info = format!(
+            "Name: {}\nID: {}\nSize (extents): {}",
+            lv.name(),
+            lv.id(),
+            lv.size_in_extents()
+        );
+        if lv.raw_metadata().segments.0.is_empty() {
+            // If no segments exist for this LV, put a placeholder.
+            table.add_row(Row::new(vec![
+                Cell::new(&pv_info),
+                Cell::new(&vg_info),
+                Cell::new(&lv_info),
+                Cell::new("No segments"),
+            ]));
+        } else {
+            // Otherwise, create one row per segment.
+            for (seg_key, seg) in &lv.raw_metadata().segments.0 {
+                let seg_info =
+                    format!(
+                    "Key: {}\nStart: {}\nCount: {}\nType: {}\nStripe Count: {}\nStripe Size: {}",
+                    seg_key,
+                    seg.start_extent,
+                    seg.extent_count,
+                    seg.r#type,
+                    seg.stripe_count.map(|n| n.to_string()).unwrap_or_else(|| "-".to_owned()),
+                    seg.stripe_size.map(|n| n.to_string()).unwrap_or_else(|| "-".to_owned()),
+                );
+                table.add_row(Row::new(vec![
+                    Cell::new(&pv_info),
+                    Cell::new(&vg_info),
+                    Cell::new(&lv_info),
+                    Cell::new(&seg_info),
+                ]));
+            }
         }
-        seg_table.printstd();
-        println!("------------------------------------------------------------");
     }
+
+    // Print the complete table.
+    table.printstd();
 }
