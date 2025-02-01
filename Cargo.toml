@@ -4,3 +4,19 @@ version = "0.1.0"
 edition = "2021"
 
 [dependencies]
+exhume_body = { path = "../exhume_body" }
+exhume_extfs = { path = "../exhume_extfs" }
+byteorder = "1.4"
+acid_io = { version = "0.1.0", default-features = false, features = ["alloc"] }
+nom = { version = "7.1.1", default-features = false, features = ["alloc"] }
+serde = { version = "1.0.142", default-features = false, features = ["derive"] }
+snafu = { version = "0.7.1", default-features = false }
+tracing = { version = "0.1.36", default-features = false }
+clap = "4.0"
+clap-num = "1.1.1"
+prettytable-rs = "^0.10"
+
+
+[features]
+default = ["std"]
+std = ["acid_io/std", "nom/std", "serde/std", "snafu/std", "tracing/std"]
