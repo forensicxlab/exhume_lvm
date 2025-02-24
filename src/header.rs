@@ -23,7 +23,6 @@ impl PhysicalVolumeLabelHeader {
         let (input, checksum) = le_u32(input)?;
         let (input, data_offset) = le_u32(input)?;
         let (input, _) = tag(b"LVM2 001")(input)?;
-        println!("OK!");
         Ok((
             input,
             Self {
