@@ -1,3 +1,4 @@
+// lvm2.rs
 //#![no_std]
 extern crate alloc;
 
@@ -12,8 +13,7 @@ use crate::metadata::{deserialize::MetadataElements, MetadataRoot};
 
 // Vocabulary: in this crate we use the term "sheet" to describe a block of exactly 512 bytes
 // (to avoid confusion around the word "sector")
-
-// spec: https://github.com/libyal/libvslvm/blob/ab09a380072448d9c84c886d487d8c3dfa2d1527/documentation/Logical%20Volume%20Manager%20(LVM)%20format.asciidoc#2-physical-volume-label
+// // spec: https://github.com/libyal/libvslvm/blob/ab09a380072448d9c84c886d487d8c3dfa2d1527/documentation/Logical%20Volume%20Manager%20(LVM)%20format.asciidoc#2-physical-volume-label
 
 pub struct Lvm2 {
     pvh: PhysicalVolumeHeader,
@@ -83,7 +83,20 @@ pub mod metadata;
 pub use lv::*;
 
 impl Lvm2 {
-    pub fn open<T: Read + Seek>(mut reader: T, offset: u64) -> Result<Self, Error> {
+    // Public getters to expose pv_name and lvs for external use.
+    pub fn pv_name(&self) -> &str {
+        &self.pv_name
+    }
+
+    pub fn lvs(&self) -> impl Iterator<Item = LV> + '_ {
+        self.vg_config
+            .logical_volumes
+            .iter()
+            .map(|(name, desc)| LV { name, desc })
+    }
+
+    // Modified to take a mutable reference for the reader.
+    pub fn open<T: Read + Seek>(reader: &mut T, offset: u64) -> Result<Self, Error> {
         reader
             .seek(SeekFrom::Start(offset + 512))
             .context(IoSnafu)?; // skip zero sheet
@@ -165,11 +178,42 @@ impl Lvm2 {
         })
     }
 
+    // Modified LV open functions: they now take a mutable reference for the reader.
+    pub fn open_lv_by_name<'a, 'r, T: Read + Seek>(
+        &'a self,
+        name: &str,
+        reader: &'r mut T,
+    ) -> Option<OpenLV<'a, 'r, T>> {
+        self.vg_config
+            .logical_volumes
+            .get_key_value(name)
+            .map(move |(name, desc)| self.open_lv(LV { name, desc }, reader))
+    }
+    pub fn open_lv_by_id<'a, 'r, T: Read + Seek>(
+        &'a self,
+        id: &str,
+        reader: &'r mut T,
+    ) -> Option<OpenLV<'a, 'r, T>> {
+        self.lvs()
+            .find(|lv| lv.id() == id)
+            .map(move |lv| self.open_lv(lv, reader))
+    }
+    pub fn open_lv<'a, 'r, T: Read + Seek>(
+        &'a self,
+        lv: LV<'a>,
+        reader: &'r mut T,
+    ) -> OpenLV<'a, 'r, T> {
+        OpenLV {
+            lv,
+            lvm: self,
+            reader,
+            position: 0,
+            current_segment_end: 0,
+        }
+    }
+
     pub fn pv_id(&self) -> &str {
         &self.vg_config.physical_volumes[&self.pv_name].id
-    }
-    pub fn pv_name(&self) -> &str {
-        &self.pv_name
     }
 
     pub fn vg_name(&self) -> &str {
@@ -177,42 +221,6 @@ impl Lvm2 {
     }
     pub fn vg_id(&self) -> &str {
         &self.vg_config.id
-    }
-
-    pub fn lvs(&self) -> impl Iterator<Item = LV> {
-        self.vg_config
-            .logical_volumes
-            .iter()
-            .map(|(name, desc)| LV { name, desc })
-    }
-    pub fn open_lv_by_name<'a, T: Read + Seek>(
-        &'a self,
-        name: &str,
-        reader: T,
-    ) -> Option<OpenLV<'a, T>> {
-        self.vg_config
-            .logical_volumes
-            .get_key_value(name)
-            .map(move |(name, desc)| self.open_lv(LV { name, desc }, reader))
-    }
-    pub fn open_lv_by_id<'a, T: Read + Seek>(
-        &'a self,
-        id: &str,
-        reader: T,
-    ) -> Option<OpenLV<'a, T>> {
-        self.lvs()
-            .find(|lv| lv.id() == id)
-            .map(move |lv| self.open_lv(lv, reader))
-    }
-    pub fn open_lv<'a, T: Read + Seek>(&'a self, lv: LV<'a>, reader: T) -> OpenLV<'a, T> {
-        OpenLV {
-            lv,
-            lvm: self,
-            reader,
-
-            position: 0,
-            current_segment_end: 0,
-        }
     }
 
     pub fn extent_size(&self) -> u64 {
