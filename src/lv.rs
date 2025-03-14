@@ -74,6 +74,7 @@ impl<'a, 'r, T: Read + Seek> Seek for OpenLV<'a, 'r, T> {
                 acid_io::ErrorKind::Other,
                 "no suitable segment found at this place",
             ))?;
+
         if segment.r#type != "striped" || segment.stripe_count != Some(1) {
             return Err(acid_io::Error::new(
                 acid_io::ErrorKind::Other,

@@ -1,6 +1,6 @@
 use clap::{value_parser, Arg, Command};
 use clap_num::maybe_hex;
-use exhume_body::Body;
+use exhume_body::{Body, BodySlice};
 use exhume_lvm::Lvm2;
 use log::{debug, error, info};
 use prettytable::{Cell, Row, Table};
@@ -36,6 +36,14 @@ fn main() {
                 .help("LVM partition starts at address 0x..."),
         )
         .arg(
+            Arg::new("size")
+                .short('s')
+                .long("size")
+                .value_parser(maybe_hex::<u64>)
+                .required(true)
+                .help("LVM partition size."),
+        )
+        .arg(
             Arg::new("log_level")
                 .short('l')
                 .long("log-level")
@@ -61,10 +69,14 @@ fn main() {
     let format = matches.get_one::<String>("format").unwrap();
     let offset = *matches.get_one::<u64>("offset").unwrap();
 
-    let mut body = Body::new_from(body_path.clone(), format, Some(offset));
+    let mut body = Body::new(body_path.clone(), format);
+
+    let size = *matches.get_one::<u64>("size").unwrap() * body.get_sector_size() as u64;
+
+    let mut partition = BodySlice::new(&mut body, offset, size).unwrap();
     debug!("Created Body from '{}'", body_path);
 
-    let lvm = match Lvm2::open(&mut body, offset) {
+    let lvm = match Lvm2::open(&mut partition) {
         Ok(lvm) => lvm,
         Err(e) => {
             error!("Error opening LVM partition: {:?}", e);

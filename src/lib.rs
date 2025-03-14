@@ -96,10 +96,8 @@ impl Lvm2 {
     }
 
     // Modified to take a mutable reference for the reader.
-    pub fn open<T: Read + Seek>(reader: &mut T, offset: u64) -> Result<Self, Error> {
-        reader
-            .seek(SeekFrom::Start(offset + 512))
-            .context(IoSnafu)?; // skip zero sheet
+    pub fn open<T: Read + Seek>(reader: &mut T) -> Result<Self, Error> {
+        reader.seek(SeekFrom::Start(512)).context(IoSnafu)?; // skip zero sheet
 
         let mut buf = [0u8; 512];
         reader.read_exact(&mut buf).context(IoSnafu)?; // read header
@@ -123,9 +121,7 @@ impl Lvm2 {
             .context(MissingMetadataSnafu)?;
 
         reader
-            .seek(acid_io::SeekFrom::Start(
-                offset + metadata_descriptor.offset,
-            ))
+            .seek(acid_io::SeekFrom::Start(metadata_descriptor.offset))
             .context(IoSnafu)?; // skip zero sheet
         reader.read_exact(&mut buf).context(IoSnafu)?;
         let (_, mah) = MetadataAreaHeader::parse(&buf).map_err(|e| Error::ParseError {
@@ -137,7 +133,7 @@ impl Lvm2 {
         for locdesc in &mah.location_descriptors {
             reader
                 .seek(acid_io::SeekFrom::Start(
-                    offset + metadata_descriptor.offset + locdesc.data_area_offset,
+                    metadata_descriptor.offset + locdesc.data_area_offset,
                 ))
                 .context(IoSnafu)?; // skip zero sheet
             reader

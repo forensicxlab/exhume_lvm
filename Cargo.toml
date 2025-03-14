@@ -5,7 +5,6 @@ edition = "2021"
 
 [dependencies]
 exhume_body = { path = "../exhume_body" }
-exhume_extfs = { path = "../exhume_extfs" }
 byteorder = "1.4"
 acid_io = { version = "0.1.0", default-features = false, features = ["alloc"] }
 nom = { version = "7.1.1", default-features = false, features = ["alloc"] }
