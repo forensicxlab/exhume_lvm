@@ -233,7 +233,9 @@ dependencies = [
 
 [[package]]
 name = "exhume_body"
-version = "0.1.0"
+version = "0.1.1"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "cd696553b7206975b68a9cd0a9ea33abfbdc65eca0b496ee27c80318c38eae73"
 dependencies = [
  "clap",
  "clap-num",
