@@ -2,7 +2,7 @@ use clap::{value_parser, Arg, Command};
 use clap_num::maybe_hex;
 use exhume_body::{Body, BodySlice};
 use exhume_lvm::Lvm2;
-use log::{debug, error, info};
+use log::{debug, error};
 use prettytable::{Cell, Row, Table};
 use std::process;
 
@@ -87,8 +87,6 @@ fn main() {
     print_lvm_info(&lvm);
 }
 
-/// Instead of printing directly to stdout, we capture the table output
-/// and log it at the info level.
 fn print_lvm_info(lvm: &Lvm2) {
     let mut table = Table::new();
 

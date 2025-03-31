@@ -1,6 +1,7 @@
 use alloc::borrow::ToOwned;
 use alloc::string::String;
 use alloc::vec::Vec;
+use log::debug;
 use nom::bytes::complete::take;
 use nom::bytes::streaming::tag;
 use nom::error::ParseError;
@@ -96,12 +97,19 @@ pub struct MetadataAreaHeader {
 impl MetadataAreaHeader {
     pub fn parse(input: &[u8]) -> IResult<&[u8], Self> {
         let (input, checksum) = le_u32(input)?;
-        let (input, _) = tag(b" LVM2 x[5A%r0N*>")(input)?; // lol
+        let (input, _) = tag(b" LVM2 x[5A%r0N*>")(input)?;
         let (input, version) = le_u32(input)?;
         let (input, metadata_area_offset) = le_u64(input)?;
         let (input, metadata_area_size) = le_u64(input)?;
         let (input, (location_descriptors, _)) =
             many_till(LocationDescriptor::parse, tag(&[0u8; 24]))(input)?;
+
+        for loc in &location_descriptors {
+            debug!(
+                "LocationDescriptor: data_area_offset: {}, data_area_size: {}, checksum: {}, flags: {}",
+                loc.data_area_offset, loc.data_area_size, loc.checksum, loc.flags
+            );
+        }
         Ok((
             input,
             Self {

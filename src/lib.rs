@@ -5,6 +5,7 @@ extern crate alloc;
 use acid_io::{Read, Seek, SeekFrom};
 use alloc::string::{String, ToString};
 use header::PhysicalVolumeHeader;
+use log::debug;
 use serde::Deserialize;
 use snafu::{ensure, OptionExt, ResultExt, Snafu};
 
@@ -106,7 +107,10 @@ impl Lvm2 {
         let (_, vhl) = PhysicalVolumeLabelHeader::parse(&buf).map_err(|e| Error::ParseError {
             error: e.to_string(),
         })?;
-        tracing::trace!(?vhl);
+        debug!(
+            "PhysicalVolumeLabelHeader: sector_number: {}, checksum: {}, data_offset: {}",
+            vhl.sector_number, vhl.checksum, vhl.data_offset
+        );
         let (_, pvh) =
             PhysicalVolumeHeader::parse(&buf[(vhl.data_offset as usize)..]).map_err(|e| {
                 Error::ParseError {
@@ -114,6 +118,11 @@ impl Lvm2 {
                 }
             })?;
         tracing::trace!(?pvh);
+
+        debug!(
+            "PhysicalVolumeHeader: pv_ident: {}, pv_size: {}",
+            pvh.pv_ident, pvh.pv_size
+        );
 
         let metadata_descriptor = pvh
             .metadata_descriptors
@@ -128,6 +137,10 @@ impl Lvm2 {
             error: e.to_string(),
         })?;
         tracing::trace!(?mah);
+        debug!(
+            "MetadataAreaHeader: checksum: {}, version: {}, metadata_area_offset: {}, metadata_area_size: {}",
+            mah.checksum, mah.version, mah.metadata_area_offset, mah.metadata_area_size
+        );
 
         let mut metadata = String::new();
         for locdesc in &mah.location_descriptors {
