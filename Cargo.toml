@@ -1,7 +1,7 @@
 # Props to https://github.com/main--/rust-lvm2 !
 [package]
 name = "exhume_lvm"
-version = "0.1.0"
+version = "0.1.1"
 edition = "2021"
 description = "Extract Logical Volumes from a Body of data."
 documentation = "https://www.forensicxlab.com/docs/category/exhume---lvm"
@@ -9,7 +9,7 @@ authors = ["k1nd0ne"]
 license = "GPL-2.0-or-later"
 
 [dependencies]
-exhume_body = "=0.1.1"
+exhume_body = "=0.3.0"
 byteorder = "1.4"
 acid_io = { version = "0.1.0", default-features = false, features = ["alloc"] }
 nom = { version = "7.1.1", default-features = false, features = ["alloc"] }
