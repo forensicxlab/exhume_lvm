@@ -233,9 +233,9 @@ dependencies = [
 
 [[package]]
 name = "exhume_body"
-version = "0.3.0"
+version = "0.3.4"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "71a2bd3487a7178e1b3dfc548df807cd32b08e2c95959e283feb66cd3174782d"
+checksum = "c3c0d061ec67b7a06d7e424aa55a57fc5c76d4d9042c4ebd523a2a8fda92631b"
 dependencies = [
  "clap",
  "clap-num",
@@ -250,7 +250,7 @@ dependencies = [
 
 [[package]]
 name = "exhume_lvm"
-version = "0.1.1"
+version = "0.1.2"
 dependencies = [
  "acid_io",
  "byteorder",

@@ -8,7 +8,7 @@ use std::process;
 
 fn main() {
     let matches = Command::new("exhume_lvm")
-        .version("1.0")
+        .version("0.1.2")
         .author("ForensicXlab")
         .about("Exhumes and displays LVM information")
         .arg(
