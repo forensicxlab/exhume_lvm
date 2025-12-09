@@ -89,7 +89,7 @@ impl Lvm2 {
         &self.pv_name
     }
 
-    pub fn lvs(&self) -> impl Iterator<Item = LV> + '_ {
+    pub fn lvs(&self) -> impl Iterator<Item = LV<'_>> + '_ {
         self.vg_config
             .logical_volumes
             .iter()

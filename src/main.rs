@@ -1,4 +1,4 @@
-use clap::{value_parser, Arg, Command};
+use clap::*;
 use clap_num::maybe_hex;
 use exhume_body::{Body, BodySlice};
 use exhume_lvm::Lvm2;
@@ -8,8 +8,8 @@ use std::process;
 
 fn main() {
     let matches = Command::new("exhume_lvm")
-        .version("0.1.2")
-        .author("ForensicXlab")
+        .version(crate_version!())
+        .author(crate_authors!())
         .about("Exhumes and displays LVM information")
         .arg(
             Arg::new("body")
