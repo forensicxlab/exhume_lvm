@@ -42,7 +42,7 @@ impl<'a, 'r, T: Read + Seek> Read for OpenLV<'a, 'r, T> {
     fn read(&mut self, mut buf: &mut [u8]) -> acid_io::Result<usize> {
         if self.position == self.current_segment_end {
             // trigger a seek to load the next segment
-            self.seek(SeekFrom::Current(0))?;
+            self.stream_position()?;
         }
 
         let max_read = self.current_segment_end - self.position;
@@ -70,28 +70,24 @@ impl<'a, 'r, T: Read + Seek> Seek for OpenLV<'a, 'r, T> {
             .0
             .values()
             .find(|x| x.extents().contains(&target_extent))
-            .ok_or(acid_io::Error::new(
-                acid_io::ErrorKind::Other,
+            .ok_or(acid_io::Error::other(
                 "no suitable segment found at this place",
             ))?;
 
         if segment.r#type != "striped" || segment.stripe_count != Some(1) {
-            return Err(acid_io::Error::new(
-                acid_io::ErrorKind::Other,
+            return Err(acid_io::Error::other(
                 "segment is not linear",
             ));
         }
 
         let offs_in_segment = pos - (segment.start_extent * self.lvm.extent_size());
 
-        let (pv, loc) = segment.stripes.as_ref().ok_or(acid_io::Error::new(
-            acid_io::ErrorKind::Other,
+        let (pv, loc) = segment.stripes.as_ref().ok_or(acid_io::Error::other(
             "segment has no stripes",
         ))?;
         // Use the public getter for pv_name.
         if pv != self.lvm.pv_name() {
-            return Err(acid_io::Error::new(
-                acid_io::ErrorKind::Other,
+            return Err(acid_io::Error::other(
                 "data is not on this PV",
             ));
         }
@@ -108,8 +104,7 @@ impl<'a, 'r, T: Read + Seek> Seek for OpenLV<'a, 'r, T> {
             }
         }
         if !found {
-            return Err(acid_io::Error::new(
-                acid_io::ErrorKind::Other,
+            return Err(acid_io::Error::other(
                 "data is beyond the end of this PV",
             ));
         }

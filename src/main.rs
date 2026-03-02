@@ -69,11 +69,11 @@ fn main() {
     let format = matches.get_one::<String>("format").unwrap();
     let offset = *matches.get_one::<u64>("offset").unwrap();
 
-    let mut body = Body::new(body_path.clone(), format);
+    let body = Body::new(body_path.clone(), format);
 
     let size = *matches.get_one::<u64>("size").unwrap() * body.get_sector_size() as u64;
 
-    let mut partition = BodySlice::new(&mut body, offset, size).unwrap();
+    let mut partition = BodySlice::new(&body, offset, size).unwrap();
     debug!("Created Body from '{}'", body_path);
 
     let lvm = match Lvm2::open(&mut partition) {

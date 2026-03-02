@@ -77,8 +77,8 @@ fn whitespace(input: &str) -> IResult<&str, ()> {
 impl<'a> MetadataElement<'a> {
     pub fn name(&self) -> &'a str {
         match self {
-            MetadataElement::Group { name, .. } => &name,
-            MetadataElement::Value { name, .. } => &name,
+            MetadataElement::Group { name, .. } => name,
+            MetadataElement::Value { name, .. } => name,
         }
     }
     pub fn parse(input: &'a str) -> IResult<&'a str, Self> {
@@ -111,7 +111,7 @@ impl<'a> MetadataElement<'a> {
     }
 }
 
-impl<'de, 'a> de::Deserializer<'de> for &'a MetadataElements<'de> {
+impl<'de> de::Deserializer<'de> for &MetadataElements<'de> {
     forward_to_deserialize_any! {
         bool i8 i16 i32 i64 i128 u8 u16 u32 u64 u128 f32 f64 char str string
         bytes byte_buf option unit unit_struct newtype_struct seq tuple
@@ -155,7 +155,7 @@ impl<'de, 'a> de::MapAccess<'de> for MetadataElementsAccess<'a, 'de> {
         }
     }
 }
-impl<'de, 'a> de::Deserializer<'de> for &'a MetadataValue {
+impl<'de> de::Deserializer<'de> for &MetadataValue {
     forward_to_deserialize_any! {
         bool i8 i16 i32 i64 i128 u8 u16 u32 u64 u128 f32 f64 char str string
         bytes byte_buf option unit unit_struct newtype_struct seq tuple
