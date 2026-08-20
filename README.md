@@ -1,2 +1,3 @@
 # exhume_lvm
-An exhume module understanding the Logical Volume Manager layout to read data.
+
+The `exhume_lvm` documentation is maintained at [forensicxlab.com](https://www.forensicxlab.com/docs/exhume_lvm/getting-started).
