@@ -75,21 +75,18 @@ impl<'a, 'r, T: Read + Seek> Seek for OpenLV<'a, 'r, T> {
             ))?;
 
         if segment.r#type != "striped" || segment.stripe_count != Some(1) {
-            return Err(acid_io::Error::other(
-                "segment is not linear",
-            ));
+            return Err(acid_io::Error::other("segment is not linear"));
         }
 
         let offs_in_segment = pos - (segment.start_extent * self.lvm.extent_size());
 
-        let (pv, loc) = segment.stripes.as_ref().ok_or(acid_io::Error::other(
-            "segment has no stripes",
-        ))?;
+        let (pv, loc) = segment
+            .stripes
+            .as_ref()
+            .ok_or(acid_io::Error::other("segment has no stripes"))?;
         // Use the public getter for pv_name.
         if pv != self.lvm.pv_name() {
-            return Err(acid_io::Error::other(
-                "data is not on this PV",
-            ));
+            return Err(acid_io::Error::other("data is not on this PV"));
         }
 
         let mut seek_target = loc * self.lvm.extent_size() + offs_in_segment;
@@ -104,9 +101,7 @@ impl<'a, 'r, T: Read + Seek> Seek for OpenLV<'a, 'r, T> {
             }
         }
         if !found {
-            return Err(acid_io::Error::other(
-                "data is beyond the end of this PV",
-            ));
+            return Err(acid_io::Error::other("data is beyond the end of this PV"));
         }
 
         self.reader.seek(SeekFrom::Start(seek_target))?;

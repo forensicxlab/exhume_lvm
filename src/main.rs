@@ -1,13 +1,13 @@
 use clap::*;
 use clap_num::maybe_hex;
-use exhume_body::{Body, BodySlice};
+use exhume_body::{credentials, BodySlice};
 use exhume_lvm::Lvm2;
 use log::{debug, error};
 use prettytable::{Cell, Row, Table};
 use std::process;
 
 fn main() {
-    let matches = Command::new("exhume_lvm")
+    let command = Command::new("exhume_lvm")
         .version(crate_version!())
         .author(crate_authors!())
         .about("Exhumes and displays LVM information")
@@ -50,8 +50,8 @@ fn main() {
                 .value_parser(["error", "warn", "info", "debug", "trace"])
                 .default_value("info")
                 .help("Set the log verbosity level"),
-        )
-        .get_matches();
+        );
+    let matches = password_args(command).get_matches();
 
     // Initialize logger.
     let log_level_str = matches.get_one::<String>("log_level").unwrap();
@@ -69,7 +69,18 @@ fn main() {
     let format = matches.get_one::<String>("format").unwrap();
     let offset = *matches.get_one::<u64>("offset").unwrap();
 
-    let body = Body::new(body_path.clone(), format);
+    let body = credentials::open_body(
+        body_path,
+        format,
+        matches
+            .get_one::<String>("password_file")
+            .map(String::as_str),
+        matches.get_flag("password_stdin"),
+    )
+    .unwrap_or_else(|message| {
+        error!("{message}");
+        std::process::exit(1);
+    });
 
     let size = *matches.get_one::<u64>("size").unwrap() * body.get_sector_size() as u64;
 
@@ -142,4 +153,24 @@ fn print_lvm_info(lvm: &Lvm2) {
         }
     }
     table.printstd()
+}
+
+/// Register this executable's mutually exclusive container-password sources.
+fn password_args(command: clap::Command) -> clap::Command {
+    command
+        .arg(
+            clap::Arg::new("password_file")
+                .long("password-file")
+                .global(true)
+                .value_name("PATH")
+                .conflicts_with("password_stdin")
+                .help("Read the image container password from a file; remove one trailing line ending."),
+        )
+        .arg(
+            clap::Arg::new("password_stdin")
+                .long("password-stdin")
+                .global(true)
+                .action(clap::ArgAction::SetTrue)
+                .help("Read the image container password from stdin; remove one trailing line ending."),
+        )
 }
